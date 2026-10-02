@@ -1,55 +1,198 @@
-# NOTIFICATION SERVICE
 
-Plataforma Centralizada de Comunicação Corporativa
+# 🚀 Notification Service
 
-1. SOBRE O PROJETO
-   ==================
+<p align="center">
+  <b>Plataforma Centralizada de Comunicação Corporativa</b>
+</p>
 
-O Notification Service é uma plataforma responsável pelo gerenciamento e envio de notificações corporativas através de múltiplos canais de comunicação.
+<p align="center">
+Serviço responsável pelo gerenciamento e envio de notificações através de múltiplos canais de comunicação.
+</p>
 
-A solução funciona como uma camada intermediária entre sistemas internos e provedores externos de comunicação, permitindo que aplicações corporativas enviem mensagens sem precisar implementar integrações individuais.
+---
 
-O primeiro módulo utiliza Microsoft Graph API para envio de emails, porém a arquitetura foi planejada para suportar novos canais:
+# 📌 Sobre o Projeto
 
-* Email
-* Microsoft Teams
-* WhatsApp Business
-* SMS
-* Push Notifications
+O **Notification Service** é uma plataforma desenvolvida para centralizar o envio de notificações utilizadas por sistemas corporativos.
 
-2. OBJETIVO
-   ===========
+A solução funciona como uma camada intermediária entre aplicações internas e provedores externos de comunicação, permitindo que diferentes sistemas enviem mensagens sem precisar implementar integrações individuais.
 
-Criar uma infraestrutura centralizada de comunicação que permita que diferentes sistemas corporativos utilizem um único serviço para envio de mensagens.
+O primeiro módulo utiliza a **Microsoft Graph API** para envio de emails corporativos, porém a arquitetura foi preparada para suportar novos canais:
 
-Problemas atuais:
+- 📧 Email
+- 💬 Microsoft Teams
+- 📱 WhatsApp Business
+- 📲 SMS
+- 🔔 Push Notifications
 
-* Sistemas implementando integrações próprias.
-* Credenciais espalhadas.
-* Falta de histórico dos envios.
-* Dificuldade de manutenção.
-* Código duplicado.
+---
 
-Solução:
+# 🎯 Objetivos
 
-Criar um serviço independente responsável por:
+## Problema
 
-* Gerenciar autenticação.
-* Processar mensagens.
-* Enviar notificações.
-* Registrar histórico.
-* Controlar falhas.
-* Permitir expansão futura.
+Em ambientes corporativos é comum encontrar diversos sistemas realizando envio de mensagens individualmente.
 
-3. ARQUITETURA GERAL
-   ====================
+Exemplo:
 
-Sistemas Corporativos
+```
+
+Sistema A
+└── SMTP próprio
+
+Sistema B
+└── Outlook próprio
+
+Sistema C
+└── Outra integração
+
+```
+
+Isso gera:
+
+- Credenciais espalhadas.
+- Código duplicado.
+- Dificuldade de manutenção.
+- Falta de rastreabilidade.
+- Integrações inconsistentes.
+
+---
+
+## Solução
+
+Criar um serviço único responsável por:
+
+- Gerenciar autenticação.
+- Processar mensagens.
+- Enviar notificações.
+- Registrar histórico.
+- Controlar falhas.
+- Permitir expansão futura.
+
+---
+
+# 🏗️ Arquitetura
+
+```
+
+```
+             SISTEMAS CORPORATIVOS
+
+    ERP        CRM        Aplicações Internas
+     |          |                 |
+     |          |                 |
+     +----------+-----------------+
+
+                REST API
+
+                   |
+                   v
+
+        +----------------------+
+        | Notification Service |
+        +----------------------+
+
+                   |
+      +------------+-------------+
+      |            |             |
+
+    Email       Teams       WhatsApp
+
+      |
+      |
+```
+
+Provedores Externos
+
+```
+      |
+      |
+Cliente Final
+```
+
+```
+
+---
+
+# ⚙️ Tecnologias
+
+## Backend
+
+- Python 3.12+
+- FastAPI
+- Pydantic
+- SQLAlchemy
+- AsyncIO
+
+## Infraestrutura
+
+- Docker
+- Docker Compose
+- Redis
+- PostgreSQL / MongoDB
+
+## Integrações
+
+- Microsoft Graph API
+- OAuth 2.0
+- REST API
+
+---
+
+# 📂 Estrutura do Projeto
+
+```
+
+notification-service
+
+src/
+
+├── api/
+│   └── routes/
+│       ├── notification.py
+│       ├── email.py
+│       └── health.py
+│
+├── core/
+│   ├── config.py
+│   ├── security.py
+│   └── exceptions.py
+│
+├── domain/
+│   ├── entities/
+│   └── enums/
+│
+├── services/
+│   ├── notification_service.py
+│   ├── email_service.py
+│   └── template_service.py
+│
+├── providers/
+│   ├── microsoft_graph.py
+│   ├── smtp_provider.py
+│   └── whatsapp_provider.py
+│
+├── repositories/
+│   ├── notification_repository.py
+│   └── template_repository.py
+│
+├── workers/
+│   └── email_worker.py
+│
+└── main.py
+
+```
+
+---
+
+# 🔄 Fluxo de Funcionamento
+
+```
+
+Sistema Corporativo
 
 ```
     |
-    |
-    | HTTP REST API
     |
     v
 ```
@@ -61,163 +204,144 @@ Notification Service
     |
 ```
 
+Validação dos dados
+
+```
+    |
+    |
+```
+
+Processamento do template
+
+```
+    |
+    |
+```
+
+Escolha do provedor
+
+```
+    |
+    |
+```
+
+Envio da mensagem
+
+```
+    |
+    |
+```
+
+Registro do histórico
+
+```
+    |
+    |
+```
+
+Retorno do status
+
+```
+
 ---
 
-|              |               |
-Email        Teams        WhatsApp
+# 📡 API
+
+## Criar Notificação
 
 ```
-    |
-    |
+
+POST /api/v1/notifications
+
+````
+
+Exemplo:
+
+```json
+{
+  "channel": "email",
+  "recipient": "cliente@email.com",
+  "template": "resultado_disponivel",
+  "data": {
+    "cliente": "João",
+    "numero": "12345"
+  }
+}
+````
+
+Resposta:
+
+```json
+{
+  "notification_id": "987654",
+  "status": "PROCESSING"
+}
 ```
 
-Provedores de Comunicação
+---
 
-```
-    |
-    |
-```
+# 📧 Microsoft Graph Provider
 
-Cliente Final
-
-4. FUNCIONAMENTO
-   ================
-
-Fluxo de envio:
-
-1 - Sistema corporativo solicita uma notificação.
-
-2 - Notification Service recebe a requisição.
-
-3 - O serviço valida os dados.
-
-4 - Identifica o canal de comunicação.
-
-5 - Processa o template.
-
-6 - Realiza autenticação com o provedor.
-
-7 - Executa o envio.
-
-8 - Registra o histórico.
-
-9 - Retorna o resultado.
-
-5. TECNOLOGIAS
-   ==============
-
-Backend:
-
-* Python
-* FastAPI
-* Pydantic
-* SQLAlchemy
-* AsyncIO
-
-Infraestrutura:
-
-* Docker
-* Docker Compose
-* Redis
-* PostgreSQL ou MongoDB
-
-Integrações:
-
-* Microsoft Graph API
-* OAuth 2.0
-* REST API
-
-6. ESTRUTURA DO PROJETO
-   =======================
-
-notification-service
-
-src/
-
-```
-api/
-
-    routes/
-
-        notification.py
-
-        email.py
-
-        health.py
-
-
-core/
-
-    config.py
-
-    security.py
-
-    exceptions.py
-
-
-domain/
-
-    entities/
-
-    enums/
-
-
-services/
-
-    notification_service.py
-
-    email_service.py
-
-    template_service.py
-
-
-providers/
-
-    microsoft_graph.py
-
-    smtp_provider.py
-
-    whatsapp_provider.py
-
-
-repositories/
-
-    notification_repository.py
-
-    template_repository.py
-
-
-workers/
-
-    email_worker.py
-
-
-main.py
-```
-
-# 7. PRINCIPAIS COMPONENTES
-
-NotificationController
-
-Responsável pela comunicação externa.
+Responsável pela integração com Microsoft Graph API.
 
 Responsabilidades:
 
-* Receber requisições.
-* Validar dados.
+* Autenticação OAuth 2.0.
+* Gerenciamento de tokens.
+* Comunicação com Microsoft Graph.
+* Envio de emails.
+
+Fluxo:
+
+```
+Application
+
+      |
+
+OAuth Token
+
+      |
+
+Microsoft Graph API
+
+      |
+
+Exchange
+
+      |
+
+Cliente
+```
+
+---
+
+# 🧩 Principais Componentes
+
+## NotificationController
+
+Responsável pela entrada das requisições.
+
+Responsabilidades:
+
+* Receber chamadas HTTP.
+* Validar payload.
 * Iniciar processamento.
 
-NotificationService
+---
+
+## NotificationService
 
 Camada principal de negócio.
 
 Responsabilidades:
 
 * Controlar fluxo.
+* Escolher provider.
 * Gerenciar status.
-* Escolher provedor.
 
-EmailService
+---
+
+## EmailService
 
 Responsável pelo processamento de emails.
 
@@ -225,34 +349,39 @@ Funções:
 
 * Criar mensagens.
 * Aplicar templates.
-* Solicitar envio.
+* Executar envio.
 
-MicrosoftGraphProvider
+---
 
-Responsável pela integração Microsoft.
+## MicrosoftGraphProvider
 
-Responsabilidades:
+Responsável pela comunicação com Microsoft Graph.
 
-* Gerenciar OAuth 2.0.
-* Obter tokens.
-* Comunicar com Microsoft Graph.
-* Enviar emails.
+Funções:
 
-TemplateService
+* Autenticação.
+* Geração de token.
+* Envio de mensagens.
 
-Responsável pela criação dinâmica das mensagens.
+---
+
+## TemplateService
+
+Responsável pela criação dinâmica dos conteúdos.
 
 Funções:
 
 * Carregar templates.
 * Substituir variáveis.
-* Gerar conteúdo final.
+* Gerar HTML final.
 
-AuditService
+---
+
+## AuditService
 
 Responsável pelo rastreamento.
 
-Armazena:
+Registra:
 
 * Sistema origem.
 * Destinatário.
@@ -260,158 +389,126 @@ Armazena:
 * Status.
 * Erros.
 
-8. API DO SERVIÇO
-   =================
+---
 
-Endpoint:
-
-POST /api/v1/notifications
-
-Exemplo de requisição:
-
-{
-"channel": "email",
-"recipient": "[cliente@email.com](mailto:cliente@email.com)",
-"template": "resultado_disponivel",
-"data": {
-"cliente": "João",
-"numero": "12345"
-}
-}
-
-Resposta:
-
-{
-"notification_id": "987654",
-"status": "PROCESSING"
-}
-
-9. INTEGRAÇÃO MICROSOFT GRAPH
-   =============================
-
-Fluxo:
-
-Aplicação
-
-```
-|
-```
-
-OAuth Token
-
-```
-|
-```
-
-Microsoft Graph API
-
-```
-|
-```
-
-Exchange
-
-```
-|
-```
-
-Cliente
-
-Responsabilidades:
-
-* Autenticação segura.
-* Controle de permissões.
-* Envio de mensagens.
-* Gerenciamento de tokens.
-
-10. SISTEMA DE TEMPLATES
-    ========================
+# 📨 Sistema de Templates
 
 O serviço utiliza templates reutilizáveis.
 
 Exemplo:
 
+```
 templates/
 
-* welcome.html
-
-* password_reset.html
-
-* report_available.html
+├── welcome.html
+├── password_reset.html
+└── report_available.html
+```
 
 Modelo:
 
+```html
 Olá {{cliente}}
 
 Seu relatório {{numero}} está disponível.
+```
 
 Resultado:
 
+```
 Olá João
 
 Seu relatório 12345 está disponível.
+```
 
-11. BANCO DE DADOS
-    ==================
+---
 
-Tabela Notification:
+# 🗄️ Banco de Dados
 
-* id
-* system_origin
-* channel
-* recipient
-* subject
-* status
-* created_at
-* sent_at
-* error_message
+## Notification
 
-Tabela Template:
+Campos:
 
-* id
-* name
-* content
-* variables
-* created_at
+```
+id
 
-12. PROCESSAMENTO ASSÍNCRONO
-    ============================
+system_origin
+
+channel
+
+recipient
+
+subject
+
+status
+
+created_at
+
+sent_at
+
+error_message
+```
+
+---
+
+## Template
+
+Campos:
+
+```
+id
+
+name
+
+content
+
+variables
+
+created_at
+```
+
+---
+
+# ⚡ Processamento Assíncrono
 
 Para grandes volumes será utilizado processamento em fila.
 
-Fluxo:
+Arquitetura:
 
+```
 Sistema
 
-|
+ |
 
 API
 
-|
+ |
 
 Queue
 
-|
+ |
 
 Worker
 
-|
+ |
 
 Provider
 
-|
+ |
 
 Cliente
+```
 
 Benefícios:
 
 * Escalabilidade.
 * Reprocessamento automático.
-* Maior desempenho.
 * Controle de falhas.
+* Maior desempenho.
 
-13. SEGURANÇA
-    =============
+---
+
+# 🔐 Segurança
 
 Implementações:
 
@@ -422,81 +519,101 @@ Implementações:
 * Logs de auditoria.
 * Rate Limiting.
 
-14. OBSERVABILIDADE
-    ===================
+---
+
+# 📊 Observabilidade
 
 Monitoramento:
 
 * Quantidade de mensagens enviadas.
-* Mensagens com falha.
+* Taxa de falhas.
 * Tempo de processamento.
 * Histórico por sistema.
 
 Exemplo:
 
+```
 Sistema: ERP
 
-Mensagens enviadas: 15400
+Mensagens enviadas:
+15400
 
-Falhas: 12
+Falhas:
+12
 
-Último envio: 01/10/2026
+Último envio:
+01/10/2026
+```
 
-15. ROADMAP
-    ===========
+---
 
-FASE 1 - MVP
+# 🛣️ Roadmap
 
-* API de notificações.
-* Integração Microsoft Graph.
-* Envio de emails.
-* Templates.
-* Logs.
+## Versão 1.0
 
-FASE 2
+* [x] Arquitetura inicial
+* [ ] API de notificações
+* [ ] Integração Microsoft Graph
+* [ ] Templates
+* [ ] Logs
 
-* Redis Queue.
-* Dashboard administrativo.
-* Retry automático.
-* Monitoramento.
+## Versão 2.0
 
-FASE 3
+* [ ] Redis Queue
+* [ ] Dashboard administrativo
+* [ ] Retry automático
+* [ ] Monitoramento
 
-* Microsoft Teams.
-* WhatsApp Business.
-* SMS.
-* Inteligência Artificial.
+## Versão 3.0
 
-16. EXECUÇÃO LOCAL
-    ==================
+* [ ] Microsoft Teams
+* [ ] WhatsApp Business
+* [ ] SMS
+* [ ] Inteligência Artificial
+
+---
+
+# 🚀 Execução Local
 
 Instalar dependências:
 
+```bash
 pip install -r requirements.txt
+```
 
 Executar:
 
+```bash
 uvicorn src.main:app --reload
+```
 
 Documentação:
 
+```
 http://localhost:8000/docs
+```
 
-17. DOCKER
-    ==========
+---
+
+# 🐳 Docker
 
 Build:
 
+```bash
 docker compose build
+```
 
 Executar:
 
+```bash
 docker compose up -d
+```
 
-18. INTEGRAÇÃO COM SISTEMAS
-    ===========================
+---
 
-Qualquer sistema pode consumir o serviço através de HTTP.
+# 🤝 Integração com Sistemas
+
+Qualquer aplicação pode consumir o serviço através de HTTP.
 
 Compatível com:
 
@@ -508,32 +625,49 @@ Compatível com:
 
 Exemplo:
 
-Sistema envia:
+```
+Sistema Corporativo
+
+        |
 
 POST /api/v1/notifications
 
-O Notification Service realiza todo o processamento.
+        |
 
-19. VISÃO FUTURA
-    ================
+Notification Service
+
+        |
+
+Email enviado
+```
+
+---
+
+# 🌎 Visão Futura
 
 O Notification Service pode evoluir para uma plataforma completa de comunicação corporativa.
 
 Possibilidades:
 
 * Comunicação multicanal.
-* Inteligência artificial para mensagens.
-* Análise de entregabilidade.
+* Inteligência artificial para geração de mensagens.
+* Analytics de comunicação.
 * Automações.
-* Gestão centralizada de comunicação.
+* Gestão centralizada de notificações.
 
-20. CONCLUSÃO
-    =============
+---
+
+# 📌 Conclusão
 
 O Notification Service cria uma camada única de comunicação para a organização, reduzindo complexidade, aumentando segurança e permitindo que novos sistemas sejam integrados rapidamente.
 
-A solução transforma o envio de mensagens em uma infraestrutura reutilizável, preparada para crescimento e novas tecnologias.
+A solução transforma o envio de mensagens em uma infraestrutura reutilizável, escalável e preparada para futuras tecnologias.
 
-Autor:
+---
+
+# 👨‍💻 Autor
 
 Projeto de arquitetura e desenvolvimento de software corporativo.
+
+```
+```
