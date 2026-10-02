@@ -2,119 +2,189 @@
 # 🚀 Notification Service
 
 <p align="center">
-  <b>Plataforma Centralizada de Comunicação Corporativa</b>
+  <img src="https://img.shields.io/badge/status-em%20desenvolvimento-blue">
+  <img src="https://img.shields.io/badge/python-3.12+-yellow">
+  <img src="https://img.shields.io/badge/FastAPI-backend-green">
+  <img src="https://img.shields.io/badge/architecture-enterprise-purple">
 </p>
+
+<h3 align="center">
+Plataforma Centralizada de Comunicação Corporativa
+</h3>
 
 <p align="center">
-Serviço responsável pelo gerenciamento e envio de notificações através de múltiplos canais de comunicação.
+Serviço responsável por gerenciar, processar e distribuir notificações corporativas através de múltiplos canais de comunicação.
 </p>
 
----
-
-# 📌 Sobre o Projeto
-
-O **Notification Service** é uma plataforma desenvolvida para centralizar o envio de notificações utilizadas por sistemas corporativos.
-
-A solução funciona como uma camada intermediária entre aplicações internas e provedores externos de comunicação, permitindo que diferentes sistemas enviem mensagens sem precisar implementar integrações individuais.
-
-O primeiro módulo utiliza a **Microsoft Graph API** para envio de emails corporativos, porém a arquitetura foi preparada para suportar novos canais:
-
-- 📧 Email
-- 💬 Microsoft Teams
-- 📱 WhatsApp Business
-- 📲 SMS
-- 🔔 Push Notifications
 
 ---
 
-# 🎯 Objetivos
+# 📌 Visão Geral
 
-## Problema
+O **Notification Service** é uma plataforma de comunicação desenvolvida para centralizar o envio de notificações utilizadas por sistemas corporativos.
 
-Em ambientes corporativos é comum encontrar diversos sistemas realizando envio de mensagens individualmente.
+A solução atua como uma camada intermediária entre aplicações internas e provedores externos, eliminando a necessidade de cada sistema implementar sua própria integração de comunicação.
+
+Com isso, aplicações corporativas conseguem enviar mensagens através de uma única API padronizada.
+
+Exemplo:
+
+```
+
+ERP
+|
+CRM
+|
+Sistema Laboratorial
+|
+Aplicações Internas
+
+```
+      |
+      v
+```
+
+Notification Service
+
+```
+      |
+      +----------------+
+      |                |
+    Email            Teams
+    WhatsApp         SMS
+    Push
+```
+
+```
+
+---
+
+# 🎯 Motivação
+
+## O problema
+
+Em ambientes corporativos é comum cada aplicação possuir sua própria implementação de comunicação.
 
 Exemplo:
 
 ```
 
 Sistema A
-└── SMTP próprio
+|
++-- SMTP próprio
 
 Sistema B
-└── Outlook próprio
+|
++-- Integração Outlook
 
 Sistema C
-└── Outra integração
+|
++-- API independente
 
 ```
 
-Isso gera:
+Esse modelo gera:
 
-- Credenciais espalhadas.
-- Código duplicado.
-- Dificuldade de manutenção.
-- Falta de rastreabilidade.
-- Integrações inconsistentes.
+- 🔴 Credenciais distribuídas em vários sistemas.
+- 🔴 Código duplicado.
+- 🔴 Alto custo de manutenção.
+- 🔴 Falta de padronização.
+- 🔴 Dificuldade de auditoria.
+- 🔴 Baixa escalabilidade.
 
 ---
 
-## Solução
+# 💡 A solução
 
-Criar um serviço único responsável por:
+O Notification Service cria uma camada única responsável por:
 
-- Gerenciar autenticação.
-- Processar mensagens.
-- Enviar notificações.
-- Registrar histórico.
-- Controlar falhas.
-- Permitir expansão futura.
+- Gerenciamento de autenticação.
+- Processamento de mensagens.
+- Controle de templates.
+- Integração com provedores.
+- Histórico de notificações.
+- Auditoria.
+- Controle de falhas.
+- Processamento assíncrono.
+
+Resultado:
+
+```
+
+Antes:
+
+Sistema → Email Provider
+
+Depois:
+
+Sistema
+|
+|
+Notification Service
+|
+|
+Provider
+|
+Cliente
+
+```
 
 ---
 
 # 🏗️ Arquitetura
 
+A arquitetura segue princípios de:
+
+- Clean Architecture.
+- Provider Pattern.
+- Separação de responsabilidades.
+- Baixo acoplamento.
+- Alta extensibilidade.
+
+
 ```
 
 ```
-             SISTEMAS CORPORATIVOS
+                SISTEMAS CORPORATIVOS
 
     ERP        CRM        Aplicações Internas
-     |          |                 |
-     |          |                 |
-     +----------+-----------------+
 
-                REST API
+      \          |             /
 
-                   |
-                   v
-
-        +----------------------+
-        | Notification Service |
-        +----------------------+
+               REST API
 
                    |
-      +------------+-------------+
-      |            |             |
 
-    Email       Teams       WhatsApp
+          +----------------+
+          | Notification   |
+          |    Service     |
+          +----------------+
 
-      |
-      |
+                   |
+
+    +--------------+--------------+
+
+    |              |              |
+
+  Email          Teams        WhatsApp
+
+    |
 ```
 
-Provedores Externos
+Provedor Externo
 
 ```
-      |
-      |
-Cliente Final
+    |
+
+  Usuário Final
 ```
 
 ```
 
 ---
 
-# ⚙️ Tecnologias
+# ⚙️ Stack Tecnológica
+
 
 ## Backend
 
@@ -124,12 +194,15 @@ Cliente Final
 - SQLAlchemy
 - AsyncIO
 
+
 ## Infraestrutura
 
 - Docker
 - Docker Compose
 - Redis
-- PostgreSQL / MongoDB
+- PostgreSQL
+- MongoDB
+
 
 ## Integrações
 
@@ -137,9 +210,11 @@ Cliente Final
 - OAuth 2.0
 - REST API
 
+
 ---
 
 # 📂 Estrutura do Projeto
+
 
 ```
 
@@ -160,12 +235,14 @@ src/
 │
 ├── domain/
 │   ├── entities/
-│   └── enums/
+│   ├── enums/
+│   └── interfaces/
 │
 ├── services/
 │   ├── notification_service.py
 │   ├── email_service.py
-│   └── template_service.py
+│   ├── template_service.py
+│   └── audit_service.py
 │
 ├── providers/
 │   ├── microsoft_graph.py
@@ -177,7 +254,7 @@ src/
 │   └── template_repository.py
 │
 ├── workers/
-│   └── email_worker.py
+│   └── notification_worker.py
 │
 └── main.py
 
@@ -185,7 +262,8 @@ src/
 
 ---
 
-# 🔄 Fluxo de Funcionamento
+# 🔄 Fluxo de Processamento
+
 
 ```
 
@@ -193,53 +271,59 @@ Sistema Corporativo
 
 ```
     |
-    |
+
     v
 ```
 
-Notification Service
+POST /notifications
 
 ```
     |
-    |
+
+    v
 ```
 
-Validação dos dados
-
-```
-    |
-    |
-```
-
-Processamento do template
+Validação da requisição
 
 ```
     |
-    |
+
+    v
 ```
 
-Escolha do provedor
-
-```
-    |
-    |
-```
-
-Envio da mensagem
+Processamento do Template
 
 ```
     |
-    |
+
+    v
 ```
 
-Registro do histórico
+Seleção do Provider
 
 ```
     |
-    |
+
+    v
 ```
 
-Retorno do status
+Envio da Mensagem
+
+```
+    |
+
+    v
+```
+
+Registro de Auditoria
+
+```
+    |
+
+    v
+```
+
+Retorno do Status
 
 ```
 
@@ -247,7 +331,9 @@ Retorno do status
 
 # 📡 API
 
+
 ## Criar Notificação
+
 
 ```
 
@@ -255,7 +341,8 @@ POST /api/v1/notifications
 
 ````
 
-Exemplo:
+
+Request:
 
 ```json
 {
@@ -269,7 +356,7 @@ Exemplo:
 }
 ````
 
-Resposta:
+Response:
 
 ```json
 {
@@ -282,40 +369,40 @@ Resposta:
 
 # 📧 Microsoft Graph Provider
 
-Responsável pela integração com Microsoft Graph API.
+Primeiro provider implementado utilizando Microsoft Graph API.
 
 Responsabilidades:
 
 * Autenticação OAuth 2.0.
 * Gerenciamento de tokens.
 * Comunicação com Microsoft Graph.
-* Envio de emails.
+* Envio de emails corporativos.
 
 Fluxo:
 
 ```
 Application
 
-      |
+     |
 
-OAuth Token
+OAuth 2.0
 
-      |
+     |
 
 Microsoft Graph API
 
-      |
+     |
 
-Exchange
+Exchange Online
 
-      |
+     |
 
-Cliente
+Destinatário
 ```
 
 ---
 
-# 🧩 Principais Componentes
+# 🧩 Componentes Principais
 
 ## NotificationController
 
@@ -325,77 +412,50 @@ Responsabilidades:
 
 * Receber chamadas HTTP.
 * Validar payload.
-* Iniciar processamento.
+* Encaminhar processamento.
 
 ---
 
 ## NotificationService
 
-Camada principal de negócio.
+Núcleo da aplicação.
 
 Responsabilidades:
 
-* Controlar fluxo.
-* Escolher provider.
-* Gerenciar status.
+* Orquestrar fluxo.
+* Definir provider.
+* Controlar estados.
 
 ---
 
-## EmailService
+## Provider Layer
 
-Responsável pelo processamento de emails.
+Camada responsável pelas integrações externas.
 
-Funções:
+Exemplo:
 
-* Criar mensagens.
-* Aplicar templates.
-* Executar envio.
+```
+NotificationService
 
----
+        |
 
-## MicrosoftGraphProvider
+Provider Interface
 
-Responsável pela comunicação com Microsoft Graph.
+        |
 
-Funções:
-
-* Autenticação.
-* Geração de token.
-* Envio de mensagens.
-
----
-
-## TemplateService
-
-Responsável pela criação dinâmica dos conteúdos.
-
-Funções:
-
-* Carregar templates.
-* Substituir variáveis.
-* Gerar HTML final.
-
----
-
-## AuditService
-
-Responsável pelo rastreamento.
-
-Registra:
-
-* Sistema origem.
-* Destinatário.
-* Data.
-* Status.
-* Erros.
++---------------+
+|               |
+Graph        SMTP
+Email        WhatsApp
+```
 
 ---
 
 # 📨 Sistema de Templates
 
-O serviço utiliza templates reutilizáveis.
+Permite criação de mensagens reutilizáveis.
 
-Exemplo:
+Estrutura:
 
 ```
 templates/
@@ -423,11 +483,9 @@ Seu relatório 12345 está disponível.
 
 ---
 
-# 🗄️ Banco de Dados
+# 🗄️ Modelo de Dados
 
 ## Notification
-
-Campos:
 
 ```
 id
@@ -453,8 +511,6 @@ error_message
 
 ## Template
 
-Campos:
-
 ```
 id
 
@@ -471,7 +527,7 @@ created_at
 
 # ⚡ Processamento Assíncrono
 
-Para grandes volumes será utilizado processamento em fila.
+Para grandes volumes de comunicação será utilizado processamento baseado em filas.
 
 Arquitetura:
 
@@ -501,33 +557,34 @@ Cliente
 
 Benefícios:
 
-* Escalabilidade.
-* Reprocessamento automático.
-* Controle de falhas.
 * Maior desempenho.
+* Retry automático.
+* Controle de falhas.
+* Escalabilidade horizontal.
 
 ---
 
 # 🔐 Segurança
 
-Implementações:
+Recursos previstos:
 
 * OAuth 2.0.
-* API Authentication.
-* Controle de permissões.
-* Criptografia de credenciais.
-* Logs de auditoria.
+* Controle de acesso.
+* Gestão segura de credenciais.
+* Auditoria.
 * Rate Limiting.
+* Logs estruturados.
 
 ---
 
 # 📊 Observabilidade
 
-Monitoramento:
+Métricas disponíveis:
 
-* Quantidade de mensagens enviadas.
-* Taxa de falhas.
-* Tempo de processamento.
+* Mensagens processadas.
+* Taxa de sucesso.
+* Taxa de erro.
+* Tempo médio de envio.
 * Histórico por sistema.
 
 Exemplo:
@@ -535,7 +592,7 @@ Exemplo:
 ```
 Sistema: ERP
 
-Mensagens enviadas:
+Enviadas:
 15400
 
 Falhas:
@@ -549,31 +606,31 @@ Falhas:
 
 # 🛣️ Roadmap
 
-## Versão 1.0
+## v1.0
 
 * [x] Arquitetura inicial
-* [ ] API de notificações
-* [ ] Integração Microsoft Graph
+* [ ] API REST
+* [ ] Microsoft Graph Provider
 * [ ] Templates
-* [ ] Logs
+* [ ] Auditoria
 
-## Versão 2.0
+## v2.0
 
 * [ ] Redis Queue
+* [ ] Workers
 * [ ] Dashboard administrativo
 * [ ] Retry automático
-* [ ] Monitoramento
 
-## Versão 3.0
+## v3.0
 
 * [ ] Microsoft Teams
 * [ ] WhatsApp Business
 * [ ] SMS
-* [ ] Inteligência Artificial
+* [ ] IA para geração de mensagens
 
 ---
 
-# 🚀 Execução Local
+# 🚀 Executando Localmente
 
 Instalar dependências:
 
@@ -611,9 +668,9 @@ docker compose up -d
 
 ---
 
-# 🤝 Integração com Sistemas
+# 🤝 Integração
 
-Qualquer aplicação pode consumir o serviço através de HTTP.
+Qualquer sistema capaz de consumir HTTP pode utilizar o serviço.
 
 Compatível com:
 
@@ -630,7 +687,7 @@ Sistema Corporativo
 
         |
 
-POST /api/v1/notifications
+HTTP API
 
         |
 
@@ -638,30 +695,31 @@ Notification Service
 
         |
 
-Email enviado
+Mensagem enviada
 ```
 
 ---
 
 # 🌎 Visão Futura
 
-O Notification Service pode evoluir para uma plataforma completa de comunicação corporativa.
+O Notification Service pode evoluir para uma plataforma completa de comunicação empresarial:
 
 Possibilidades:
 
 * Comunicação multicanal.
-* Inteligência artificial para geração de mensagens.
-* Analytics de comunicação.
-* Automações.
-* Gestão centralizada de notificações.
+* Automação inteligente.
+* Analytics.
+* IA para geração de conteúdo.
+* Fluxos automatizados.
+* Gestão centralizada.
 
 ---
 
 # 📌 Conclusão
 
-O Notification Service cria uma camada única de comunicação para a organização, reduzindo complexidade, aumentando segurança e permitindo que novos sistemas sejam integrados rapidamente.
+O Notification Service transforma comunicação distribuída em uma infraestrutura centralizada, segura e escalável.
 
-A solução transforma o envio de mensagens em uma infraestrutura reutilizável, escalável e preparada para futuras tecnologias.
+A plataforma reduz complexidade operacional, padroniza integrações e permite que novos sistemas utilizem recursos de comunicação sem depender de implementações individuais.
 
 ---
 
@@ -669,5 +727,4 @@ A solução transforma o envio de mensagens em uma infraestrutura reutilizável,
 
 Projeto de arquitetura e desenvolvimento de software corporativo.
 
-```
 ```
