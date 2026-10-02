@@ -1,0 +1,60 @@
+# ---------- Segredos (NUNCA versionar) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ---------- Ambientes virtuais ----------
+.venv/
+venv/
+env/
+ENV/
+
+# ---------- Testes e cobertura ----------
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# ---------- Bancos e dados locais ----------
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+dump.rdb
+
+# ---------- Logs ----------
+*.log
+logs/
+
+# ---------- Docker (overrides locais) ----------
+docker-compose.override.yml
+
+# ---------- IDEs e editores ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- Sistema operacional ----------
+.DS_Store
+Thumbs.db
+desktop.ini
