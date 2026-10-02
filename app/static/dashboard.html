@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Notification Service · Painel</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --text:#1c2430; --muted:#6b7686; --line:#e2e6ec; --brand:#2456d6;
+          --ok:#1f9d55; --bad:#d64545; --warn:#c98a00; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#12161c; --card:#1b212a; --text:#e6e9ee; --muted:#93a0b2; --line:#2b3340; --brand:#6d97ff; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line); }
+  header h1 { font-size:16px; margin:0 auto 0 0; }
+  main { max-width:1200px; margin:0 auto; padding:16px 20px 40px; }
+  nav { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:16px; }
+  nav button { background:none; border:1px solid transparent; padding:8px 14px; border-radius:8px; cursor:pointer; color:var(--muted); font:inherit; }
+  nav button.active { background:var(--card); border-color:var(--line); color:var(--text); font-weight:600; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:16px; }
+  .stat .v { font-size:26px; font-weight:700; } .stat .l { color:var(--muted); font-size:12px; }
+  input, select, textarea { font:inherit; padding:7px 9px; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); }
+  textarea { width:100%; min-height:130px; font-family:ui-monospace,Menlo,monospace; font-size:12px; }
+  button.btn { background:var(--brand); color:#fff; border:0; padding:7px 14px; border-radius:6px; cursor:pointer; font:inherit; }
+  button.btn.sec { background:transparent; color:var(--brand); border:1px solid var(--line); }
+  button.btn.danger { background:var(--bad); }
+  table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  .tbl { overflow-x:auto; }
+  .pill { padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600; color:#fff; }
+  .SENT { background:var(--ok); } .FAILED { background:var(--bad); } .PROCESSING { background:var(--warn); }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
+  .alert { background:#fdecec; color:#8a1f1f; border:1px solid #f3b4b4; padding:10px 14px; border-radius:8px; margin-bottom:16px; }
+  .bars { display:flex; align-items:flex-end; gap:3px; height:120px; }
+  .bar { flex:1; display:flex; flex-direction:column-reverse; min-width:4px; }
+  .bar i { display:block; } .bar .s { background:var(--ok); } .bar .f { background:var(--bad); } .bar .p { background:var(--warn); }
+  .muted { color:var(--muted); } .hide { display:none; } .mono { font-family:ui-monospace,Menlo,monospace; font-size:12px; }
+  .toast { position:fixed; right:16px; bottom:16px; background:var(--text); color:var(--bg); padding:10px 14px; border-radius:8px; max-width:420px; word-break:break-all; }
+  pre { white-space:pre-wrap; margin:0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>📨 Notification Service · Painel administrativo</h1>
+  <input id="key" type="password" placeholder="Admin key" size="26" autocomplete="off">
+  <button class="btn" id="login">Entrar</button>
+</header>
+<main id="app" class="hide">
+  <nav id="tabs"></nav>
+  <section id="t-overview"></section>
+  <section id="t-notifications" class="hide"></section>
+  <section id="t-templates" class="hide"></section>
+  <section id="t-clients" class="hide"></section>
+  <section id="t-ai" class="hide"></section>
+</main>
+<div id="toast" class="toast hide"></div>
+
+<script>
+"use strict";
+// ---- util: todo conteúdo dinâmico entra via textContent (nunca HTML bruto) ----
+const $ = (id) => document.getElementById(id);
+function h(tag, props, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null && v !== false) el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const k of kids.flat()) if (k !== null && k !== undefined && k !== false) el.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return el;
+}
+const fmt = (d) => d ? new Date(d).toLocaleString("pt-BR") : "—";
+const pct = (x) => x === null || x === undefined ? "—" : (x * 100).toFixed(1) + "%";
+let toastTimer;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.remove("hide"); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add("hide"), 6000); }
+
+let KEY = sessionStorage.getItem("adminKey") || "";
+async function api(path, opts = {}) {
+  const r = await fetch("/api/v1/admin" + path, { ...opts, headers: { "X-Admin-Key": KEY, "Content-Type": "application/json", ...(opts.headers || {}) } });
+  if (r.status === 204) return null;
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.message || (Array.isArray(body.detail) ? body.detail.map(d => d.msg).join("; ") : "Erro " + r.status));
+  return body;
+}
+const guard = (fn) => async (...a) => { try { await fn(...a); } catch (e) { toast(e.message); } };
+
+// ---- abas ----
+const TABS = { overview: "Visão geral", notifications: "Notificações", templates: "Templates", clients: "Sistemas", ai: "IA" };
+const loaders = {};
+function showTab(name) {
+  for (const k of Object.keys(TABS)) $("t-" + k).classList.toggle("hide", k !== name);
+  [...$("tabs").children].forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+  return guard(loaders[name])();
+}
+function buildTabs() {
+  $("tabs").replaceChildren(...Object.entries(TABS).map(([k, v]) => h("button", { "data-tab": k, onclick: () => showTab(k) }, v)));
+}
+
+// ---- Visão geral ----
+let overviewHours = 24;
+loaders.overview = async () => {
+  const root = $("t-overview");
+  const hours = overviewHours;
+  const hoursSel = h("select", { onchange: (e) => { overviewHours = Number(e.target.value); guard(() => loaders.overview())(); } },
+    [24, 72, 168, 720].map(n => h("option", { value: n, selected: n === hours }, n >= 168 ? `${n / 24} dias` : `${n} horas`)));
+  const s = await api("/stats?hours=" + hours);
+  const max = Math.max(1, ...s.timeline.map(t => t.total));
+  const bars = h("div", { class: "bars" }, s.timeline.map(t => h("div", { class: "bar", title: `${fmt(t.bucket)} · ${t.total} (${t.failed} falhas)`, style: `height:${Math.max(4, t.total / max * 100)}%` },
+    h("i", { class: "s", style: `height:${t.total ? t.sent / t.total * 100 : 0}%` }), h("i", { class: "f", style: `height:${t.total ? t.failed / t.total * 100 : 0}%` }), h("i", { class: "p", style: `height:${t.total ? t.processing / t.total * 100 : 0}%` }))));
+  const stat = (v, l) => h("div", { class: "card stat" }, h("div", { class: "v" }, v), h("div", { class: "l" }, l));
+  const table = (obj) => h("div", { class: "tbl" }, h("table", {}, h("tr", {}, ["", "Total", "Enviadas", "Falhas"].map(x => h("th", {}, x))),
+    Object.entries(obj).map(([k, v]) => h("tr", {}, h("td", {}, k), h("td", {}, v.total), h("td", {}, v.sent), h("td", {}, v.failed)))));
+  root.replaceChildren(
+    h("div", { class: "row" }, h("span", { class: "muted" }, "Período:"), hoursSel),
+    s.alert.active ? h("div", { class: "alert" }, "⚠️ ", s.alert.message) : null,
+    h("div", { class: "grid" }, stat(s.total, "Notificações"), stat(s.sent, "Enviadas"), stat(s.failed, "Falhas"), stat(s.processing, "Em processamento"), stat(pct(s.success_rate), "Taxa de sucesso")),
+    h("div", { class: "card" }, h("b", {}, "Volume no período "), h("span", { class: "muted" }, "(verde: enviadas · vermelho: falhas · amarelo: em processamento)"), bars),
+    h("div", { class: "grid", style: "grid-template-columns:repeat(auto-fit,minmax(320px,1fr))" },
+      h("div", { class: "card" }, h("b", {}, "Por canal"), table(s.by_channel)),
+      h("div", { class: "card" }, h("b", {}, "Por sistema"), table(s.by_system)),
+      h("div", { class: "card" }, h("b", {}, "Principais erros"), s.top_errors.length ? s.top_errors.map(e => h("p", { class: "mono" }, `${e.count}× ${e.error}`)) : h("p", { class: "muted" }, "Nenhuma falha 🎉")))
+  );
+};
+
+// ---- Notificações ----
+const filt = { status: "", channel: "", origin_system: "", recipient: "" };
+loaders.notifications = async () => {
+  const root = $("t-notifications");
+  const qs = new URLSearchParams({ limit: 100 });
+  for (const [k, v] of Object.entries(filt)) if (v) qs.set(k, v);
+  const rows = await api("/notifications?" + qs);
+  const input = (k, ph) => h("input", { placeholder: ph, value: filt[k], size: 14, onchange: (e) => { filt[k] = e.target.value.trim(); } });
+  const sel = (k, opts) => h("select", { onchange: (e) => { filt[k] = e.target.value; } }, ["", ...opts].map(o => h("option", { value: o, selected: filt[k] === o }, o || "(todos)")));
+  const auditBox = h("div", { class: "card hide" });
+  const show = guard(async (id) => {
+    const a = await api(`/notifications/${id}/audit`);
+    auditBox.classList.remove("hide");
+    auditBox.replaceChildren(h("b", {}, "Auditoria · " + id), h("div", { class: "tbl" }, h("table", {}, h("tr", {}, ["Quando", "Evento", "Resultado", "Sistema", "Usuário", "Detalhe"].map(x => h("th", {}, x))),
+      a.map(r => h("tr", {}, h("td", {}, fmt(r.created_at)), h("td", {}, r.event), h("td", {}, r.result), h("td", {}, r.origin_system), h("td", {}, r.actor || "—"), h("td", { class: "mono" }, r.detail || ""))))));
+  });
+  const retry = guard(async (id) => { await api(`/notifications/${id}/retry`, { method: "POST" }); toast("Reenvio enfileirado."); loaders.notifications(); });
+  root.replaceChildren(
+    h("div", { class: "card row" }, sel("status", ["PROCESSING", "SENT", "FAILED"]), sel("channel", ["email", "teams", "whatsapp", "sms"]), input("origin_system", "Sistema"), input("recipient", "Destinatário contém…"), h("button", { class: "btn", onclick: guard(() => loaders.notifications()) }, "Filtrar")),
+    h("div", { class: "card tbl" }, h("table", {}, h("tr", {}, ["Criada", "Sistema", "Canal", "Destinatário", "Template", "Prio.", "Status", "Tent.", "Erro", ""].map(x => h("th", {}, x))),
+      rows.map(n => h("tr", {}, h("td", {}, fmt(n.created_at)), h("td", {}, n.origin_system), h("td", {}, n.channel), h("td", {}, n.recipient), h("td", {}, n.template), h("td", {}, n.priority),
+        h("td", {}, h("span", { class: "pill " + n.status }, n.status)), h("td", {}, n.attempts), h("td", { class: "mono" }, n.error_message || ""),
+        h("td", {}, h("button", { class: "btn sec", onclick: () => show(n.id) }, "Auditoria"), " ", n.status === "FAILED" ? h("button", { class: "btn sec", onclick: () => retry(n.id) }, "Reenviar") : null)))),
+      rows.length ? null : h("p", { class: "muted" }, "Nenhuma notificação encontrada.")),
+    auditBox);
+};
+
+// ---- Templates ----
+loaders.templates = async () => {
+  const root = $("t-templates");
+  const list = await api("/templates");
+  const f = {};
+  const field = (k, label, el) => { f[k] = el; return h("label", { class: "row" }, h("span", { style: "min-width:150px" }, label), el); };
+  const form = h("div", { class: "card" }, h("b", {}, "Criar / editar template"),
+    field("name", "Nome", h("input", { placeholder: "resultado_disponivel" })),
+    field("channel", "Canal", h("select", {}, ["email", "teams", "whatsapp", "sms"].map(c => h("option", { value: c }, c)))),
+    field("subject", "Assunto/título", h("input", { size: 40, placeholder: "Resultado {{ numero }} disponível" })),
+    field("variables", "Variáveis (vírgula)", h("input", { size: 40, placeholder: "cliente, numero" })),
+    field("external_template_name", "WhatsApp: template Meta", h("input", { placeholder: "(opcional)" })),
+    field("language", "WhatsApp: idioma", h("input", { placeholder: "pt_BR", size: 8 })),
+    h("div", { class: "muted" }, "Conteúdo (HTML para email; texto puro nos demais canais)"),
+    (f.html_content = h("textarea", {})),
+    h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => {
+      const body = { name: f.name.value.trim(), channel: f.channel.value, subject: f.subject.value || null, html_content: f.html_content.value,
+        variables: f.variables.value.split(",").map(s => s.trim()).filter(Boolean), external_template_name: f.external_template_name.value || null, language: f.language.value || null };
+      const exists = list.some(t => t.name === body.name);
+      await api(exists ? "/templates/" + body.name : "/templates", { method: exists ? "PUT" : "POST", body: JSON.stringify(body) });
+      toast("Template salvo."); loaders.templates();
+    }) }, "Salvar")));
+  const edit = (t) => { f.name.value = t.name; f.channel.value = t.channel; f.subject.value = t.subject || ""; f.variables.value = (t.variables || []).join(", ");
+    f.external_template_name.value = t.external_template_name || ""; f.language.value = t.language || ""; f.html_content.value = t.html_content; scrollTo(0, 0); };
+  const del = guard(async (t) => { if (confirm(`Excluir '${t.name}'?`)) { await api("/templates/" + t.name, { method: "DELETE" }); loaders.templates(); } });
+  root.replaceChildren(form, h("div", { class: "card tbl" }, h("table", {}, h("tr", {}, ["Nome", "Canal", "Assunto", "Variáveis", ""].map(x => h("th", {}, x))),
+    list.map(t => h("tr", {}, h("td", {}, t.name), h("td", {}, t.channel), h("td", {}, t.subject || ""), h("td", {}, (t.variables || []).join(", ")),
+      h("td", {}, h("button", { class: "btn sec", onclick: () => edit(t) }, "Editar"), " ", h("button", { class: "btn danger", onclick: () => del(t) }, "Excluir")))))));
+  window._templateForm = f;
+};
+
+// ---- Sistemas (controle de acesso) ----
+let lastKey = null;
+loaders.clients = async () => {
+  const root = $("t-clients");
+  const list = await api("/clients");
+  const CH = ["email", "teams", "whatsapp", "sms"];
+  const name = h("input", { placeholder: "nome_do_sistema" });
+  const checks = CH.map(c => h("label", {}, h("input", { type: "checkbox", value: c, checked: c === "email" }), " " + c + "  "));
+  const limit = h("input", { type: "number", min: 0, placeholder: "req/min (padrão)", size: 14 });
+  const keyBox = h("div", { class: "card " + (lastKey ? "" : "hide") });
+  const paintKey = () => { if (lastKey) keyBox.replaceChildren(h("b", {}, `API Key de ${lastKey.name} (exibida só agora — copie e guarde):`), h("p", { class: "mono" }, lastKey.api_key)); };
+  const showKey = (c) => { lastKey = c; keyBox.classList.remove("hide"); paintKey(); };
+  paintKey();
+  const channelsOf = (c) => h("span", {}, CH.map(ch => h("label", {}, h("input", { type: "checkbox", checked: c.allowed_channels.includes(ch),
+    onchange: guard(async (e) => { const next = CH.filter(x => x === ch ? e.target.checked : c.allowed_channels.includes(x)); const r = await api("/clients/" + c.name, { method: "PATCH", body: JSON.stringify({ allowed_channels: next }) }); c.allowed_channels = r.allowed_channels; toast("Canais atualizados."); }) }), " " + ch + " ")));
+  root.replaceChildren(
+    h("div", { class: "card row" }, name, ...checks, limit, h("button", { class: "btn", onclick: guard(async () => {
+      const body = { name: name.value.trim(), allowed_channels: checks.map(l => l.firstChild).filter(i => i.checked).map(i => i.value), rate_limit_per_minute: limit.value === "" ? null : Number(limit.value) };
+      lastKey = await api("/clients", { method: "POST", body: JSON.stringify(body) }); await loaders.clients();
+    }) }, "Cadastrar sistema")),
+    keyBox,
+    h("div", { class: "card tbl" }, h("table", {}, h("tr", {}, ["Sistema", "Canais", "Limite/min", "Status", ""].map(x => h("th", {}, x))),
+      list.map(c => h("tr", {}, h("td", {}, c.name), h("td", {}, channelsOf(c)), h("td", {}, h("input", { type: "number", min: 0, size: 6, value: c.rate_limit_per_minute ?? "", placeholder: "padrão",
+        onchange: guard(async (e) => { await api("/clients/" + c.name, { method: "PATCH", body: JSON.stringify({ rate_limit_per_minute: e.target.value === "" ? null : Number(e.target.value) }) }); toast("Limite atualizado."); }) })),
+        h("td", {}, h("span", { class: "pill " + (c.is_active ? "SENT" : "FAILED") }, c.is_active ? "ativo" : "revogado")),
+        h("td", {}, h("button", { class: "btn sec", onclick: guard(async () => { await api("/clients/" + c.name, { method: "PATCH", body: JSON.stringify({ is_active: !c.is_active }) }); loaders.clients(); }) }, c.is_active ? "Revogar" : "Reativar"), " ",
+          h("button", { class: "btn sec", onclick: guard(async () => { if (confirm("A chave atual deixará de funcionar. Continuar?")) { lastKey = await api(`/clients/${c.name}/rotate-key`, { method: "POST" }); await loaders.clients(); } }) }, "Rotacionar chave")))))));
+};
+
+// ---- IA ----
+loaders.ai = async () => {
+  const root = $("t-ai");
+  const st = await api("/ai/status");
+  const out = h("pre", { class: "mono" });
+  const desc = h("textarea", { placeholder: "Descreva a mensagem. Ex.: aviso ao cliente de que o resultado do exame está disponível, com número do protocolo" });
+  const chan = h("select", {}, ["email", "teams", "whatsapp", "sms"].map(c => h("option", { value: c }, c)));
+  const msg = h("textarea", { placeholder: "Cole aqui a mensagem recebida do cliente" });
+  root.replaceChildren(
+    h("div", { class: "card" }, st.enabled ? "✅ IA configurada." : "ℹ️ IA não configurada (defina ANTHROPIC_API_KEY). A classificação de prioridade usa heurística; o alerta de falhas continua ativo."),
+    h("div", { class: "card" }, h("b", {}, "Gerar template"), desc, h("div", { class: "row" }, chan, h("button", { class: "btn", onclick: guard(async () => {
+      const r = await api("/ai/generate-template", { method: "POST", body: JSON.stringify({ description: desc.value, channel: chan.value }) });
+      out.textContent = JSON.stringify(r, null, 2);
+      await showTab("templates");
+      const f = window._templateForm; f.name.value = r.name; f.channel.value = r.channel; f.subject.value = r.subject; f.variables.value = r.variables.join(", "); f.html_content.value = r.html_content;
+      toast("Sugestão carregada no formulário — revise antes de salvar.");
+    }) }, "Gerar"))),
+    h("div", { class: "card" }, h("b", {}, "Sugerir respostas"), msg, h("div", { class: "row" }, h("button", { class: "btn", onclick: guard(async () => {
+      const r = await api("/ai/suggest-reply", { method: "POST", body: JSON.stringify({ message: msg.value }) }); out.textContent = r.replies.map((x, i) => `${i + 1}. ${x}`).join("\n\n");
+    }) }, "Sugerir"), h("button", { class: "btn sec", onclick: guard(async () => {
+      const r = await api("/ai/failure-analysis?hours=24"); out.textContent = (r.alert.active ? "⚠️ " + r.alert.message + "\n\n" : "Sem alerta ativo.\n\n") + (r.analysis || "(sem análise de IA)");
+    }) }, "Analisar falhas (24h)"))),
+    h("div", { class: "card" }, out));
+};
+
+// ---- login ----
+async function enter() {
+  try {
+    await api("/stats?hours=1");
+    sessionStorage.setItem("adminKey", KEY);
+    $("app").classList.remove("hide");
+    buildTabs(); showTab("overview");
+  } catch (e) { toast(e.message); }
+}
+$("login").onclick = () => { KEY = $("key").value.trim(); enter(); };
+$("key").addEventListener("keydown", (e) => { if (e.key === "Enter") $("login").click(); });
+if (KEY) enter();
+</script>
+</body>
+</html>

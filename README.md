@@ -1,730 +1,109 @@
+# Notification Service
 
-# 🚀 Notification Service
+Serviço centralizado de notificações corporativas (FastAPI). Os sistemas internos chamam uma única API REST; o serviço valida, renderiza o template, envia pelo canal escolhido, registra histórico e auditoria e expõe um painel administrativo.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/status-em%20desenvolvimento-blue">
-  <img src="https://img.shields.io/badge/python-3.12+-yellow">
-  <img src="https://img.shields.io/badge/FastAPI-backend-green">
-  <img src="https://img.shields.io/badge/architecture-enterprise-purple">
-</p>
+| Canal | Provedor | `recipient` |
+|---|---|---|
+| `email` | Microsoft Graph (padrão), SMTP, console (dev) | endereço de email |
+| `teams` | Webhook de Workflows (Adaptive Card) | alias cadastrado em `TEAMS_WEBHOOKS` |
+| `whatsapp` | WhatsApp Business Cloud API (Meta) | telefone E.164 (`+5511999999999`) |
+| `sms` | Twilio | telefone E.164 |
 
-<h3 align="center">
-Plataforma Centralizada de Comunicação Corporativa
-</h3>
+**Recursos:** templates por canal (Jinja2 em sandbox) · fila Redis com prioridades (`high`/`normal`/`low`) e retry com backoff · idempotência (`Idempotency-Key`) · rate limit por sistema · API Keys por sistema com permissão por canal, revogação e rotação · auditoria completa · painel web · alerta automático de falhas · IA opcional · retenção/anonimização de dados · migrações Alembic.
 
-<p align="center">
-Serviço responsável por gerenciar, processar e distribuir notificações corporativas através de múltiplos canais de comunicação.
-</p>
-
-
----
-
-# 📌 Visão Geral
-
-O **Notification Service** é uma plataforma de comunicação desenvolvida para centralizar o envio de notificações utilizadas por sistemas corporativos.
-
-A solução atua como uma camada intermediária entre aplicações internas e provedores externos, eliminando a necessidade de cada sistema implementar sua própria integração de comunicação.
-
-Com isso, aplicações corporativas conseguem enviar mensagens através de uma única API padronizada.
-
-Exemplo:
-
-```
-
-ERP
-|
-CRM
-|
-Sistema Laboratorial
-|
-Aplicações Internas
-
-```
-      |
-      v
-```
-
-Notification Service
-
-```
-      |
-      +----------------+
-      |                |
-    Email            Teams
-    WhatsApp         SMS
-    Push
-```
-
-```
-
----
-
-# 🎯 Motivação
-
-## O problema
-
-Em ambientes corporativos é comum cada aplicação possuir sua própria implementação de comunicação.
-
-Exemplo:
-
-```
-
-Sistema A
-|
-+-- SMTP próprio
-
-Sistema B
-|
-+-- Integração Outlook
-
-Sistema C
-|
-+-- API independente
-
-```
-
-Esse modelo gera:
-
-- 🔴 Credenciais distribuídas em vários sistemas.
-- 🔴 Código duplicado.
-- 🔴 Alto custo de manutenção.
-- 🔴 Falta de padronização.
-- 🔴 Dificuldade de auditoria.
-- 🔴 Baixa escalabilidade.
-
----
-
-# 💡 A solução
-
-O Notification Service cria uma camada única responsável por:
-
-- Gerenciamento de autenticação.
-- Processamento de mensagens.
-- Controle de templates.
-- Integração com provedores.
-- Histórico de notificações.
-- Auditoria.
-- Controle de falhas.
-- Processamento assíncrono.
-
-Resultado:
-
-```
-
-Antes:
-
-Sistema → Email Provider
-
-Depois:
-
-Sistema
-|
-|
-Notification Service
-|
-|
-Provider
-|
-Cliente
-
-```
-
----
-
-# 🏗️ Arquitetura
-
-A arquitetura segue princípios de:
-
-- Clean Architecture.
-- Provider Pattern.
-- Separação de responsabilidades.
-- Baixo acoplamento.
-- Alta extensibilidade.
-
-
-```
-
-```
-                SISTEMAS CORPORATIVOS
-
-    ERP        CRM        Aplicações Internas
-
-      \          |             /
-
-               REST API
-
-                   |
-
-          +----------------+
-          | Notification   |
-          |    Service     |
-          +----------------+
-
-                   |
-
-    +--------------+--------------+
-
-    |              |              |
-
-  Email          Teams        WhatsApp
-
-    |
-```
-
-Provedor Externo
-
-```
-    |
-
-  Usuário Final
-```
-
-```
-
----
-
-# ⚙️ Stack Tecnológica
-
-
-## Backend
-
-- Python 3.12+
-- FastAPI
-- Pydantic
-- SQLAlchemy
-- AsyncIO
-
-
-## Infraestrutura
-
-- Docker
-- Docker Compose
-- Redis
-- PostgreSQL
-- MongoDB
-
-
-## Integrações
-
-- Microsoft Graph API
-- OAuth 2.0
-- REST API
-
-
----
-
-# 📂 Estrutura do Projeto
-
-
-```
-
-notification-service
-
-src/
-
-├── api/
-│   └── routes/
-│       ├── notification.py
-│       ├── email.py
-│       └── health.py
-│
-├── core/
-│   ├── config.py
-│   ├── security.py
-│   └── exceptions.py
-│
-├── domain/
-│   ├── entities/
-│   ├── enums/
-│   └── interfaces/
-│
-├── services/
-│   ├── notification_service.py
-│   ├── email_service.py
-│   ├── template_service.py
-│   └── audit_service.py
-│
-├── providers/
-│   ├── microsoft_graph.py
-│   ├── smtp_provider.py
-│   └── whatsapp_provider.py
-│
-├── repositories/
-│   ├── notification_repository.py
-│   └── template_repository.py
-│
-├── workers/
-│   └── notification_worker.py
-│
-└── main.py
-
-```
-
----
-
-# 🔄 Fluxo de Processamento
-
-
-```
-
-Sistema Corporativo
-
-```
-    |
-
-    v
-```
-
-POST /notifications
-
-```
-    |
-
-    v
-```
-
-Validação da requisição
-
-```
-    |
-
-    v
-```
-
-Processamento do Template
-
-```
-    |
-
-    v
-```
-
-Seleção do Provider
-
-```
-    |
-
-    v
-```
-
-Envio da Mensagem
-
-```
-    |
-
-    v
-```
-
-Registro de Auditoria
-
-```
-    |
-
-    v
-```
-
-Retorno do Status
-
-```
-
----
-
-# 📡 API
-
-
-## Criar Notificação
-
-
-```
-
-POST /api/v1/notifications
-
-````
-
-
-Request:
-
-```json
-{
-  "channel": "email",
-  "recipient": "cliente@email.com",
-  "template": "resultado_disponivel",
-  "data": {
-    "cliente": "João",
-    "numero": "12345"
-  }
-}
-````
-
-Response:
-
-```json
-{
-  "notification_id": "987654",
-  "status": "PROCESSING"
-}
-```
-
----
-
-# 📧 Microsoft Graph Provider
-
-Primeiro provider implementado utilizando Microsoft Graph API.
-
-Responsabilidades:
-
-* Autenticação OAuth 2.0.
-* Gerenciamento de tokens.
-* Comunicação com Microsoft Graph.
-* Envio de emails corporativos.
-
-Fluxo:
-
-```
-Application
-
-     |
-
-OAuth 2.0
-
-     |
-
-Microsoft Graph API
-
-     |
-
-Exchange Online
-
-     |
-
-Destinatário
-```
-
----
-
-# 🧩 Componentes Principais
-
-## NotificationController
-
-Responsável pela entrada das requisições.
-
-Responsabilidades:
-
-* Receber chamadas HTTP.
-* Validar payload.
-* Encaminhar processamento.
-
----
-
-## NotificationService
-
-Núcleo da aplicação.
-
-Responsabilidades:
-
-* Orquestrar fluxo.
-* Definir provider.
-* Controlar estados.
-
----
-
-## Provider Layer
-
-Camada responsável pelas integrações externas.
-
-Exemplo:
-
-```
-NotificationService
-
-        |
-
-Provider Interface
-
-        |
-
-+---------------+
-|               |
-Graph        SMTP
-Email        WhatsApp
-```
-
----
-
-# 📨 Sistema de Templates
-
-Permite criação de mensagens reutilizáveis.
-
-Estrutura:
-
-```
-templates/
-
-├── welcome.html
-├── password_reset.html
-└── report_available.html
-```
-
-Modelo:
-
-```html
-Olá {{cliente}}
-
-Seu relatório {{numero}} está disponível.
-```
-
-Resultado:
-
-```
-Olá João
-
-Seu relatório 12345 está disponível.
-```
-
----
-
-# 🗄️ Modelo de Dados
-
-## Notification
-
-```
-id
-
-system_origin
-
-channel
-
-recipient
-
-subject
-
-status
-
-created_at
-
-sent_at
-
-error_message
-```
-
----
-
-## Template
-
-```
-id
-
-name
-
-content
-
-variables
-
-created_at
-```
-
----
-
-# ⚡ Processamento Assíncrono
-
-Para grandes volumes de comunicação será utilizado processamento baseado em filas.
-
-Arquitetura:
-
-```
-Sistema
-
- |
-
-API
-
- |
-
-Queue
-
- |
-
-Worker
-
- |
-
-Provider
-
- |
-
-Cliente
-```
-
-Benefícios:
-
-* Maior desempenho.
-* Retry automático.
-* Controle de falhas.
-* Escalabilidade horizontal.
-
----
-
-# 🔐 Segurança
-
-Recursos previstos:
-
-* OAuth 2.0.
-* Controle de acesso.
-* Gestão segura de credenciais.
-* Auditoria.
-* Rate Limiting.
-* Logs estruturados.
-
----
-
-# 📊 Observabilidade
-
-Métricas disponíveis:
-
-* Mensagens processadas.
-* Taxa de sucesso.
-* Taxa de erro.
-* Tempo médio de envio.
-* Histórico por sistema.
-
-Exemplo:
-
-```
-Sistema: ERP
-
-Enviadas:
-15400
-
-Falhas:
-12
-
-Último envio:
-01/10/2026
-```
-
----
-
-# 🛣️ Roadmap
-
-## v1.0
-
-* [x] Arquitetura inicial
-* [ ] API REST
-* [ ] Microsoft Graph Provider
-* [ ] Templates
-* [ ] Auditoria
-
-## v2.0
-
-* [ ] Redis Queue
-* [ ] Workers
-* [ ] Dashboard administrativo
-* [ ] Retry automático
-
-## v3.0
-
-* [ ] Microsoft Teams
-* [ ] WhatsApp Business
-* [ ] SMS
-* [ ] IA para geração de mensagens
-
----
-
-# 🚀 Executando Localmente
-
-Instalar dependências:
+## Subir localmente (sem Docker)
 
 ```bash
 pip install -r requirements.txt
+export ADMIN_API_KEY=minha-chave-admin EMAIL_PROVIDER=console
+uvicorn app.main:app --reload
 ```
+- Docs da API: http://localhost:8000/docs · Painel: http://localhost:8000/admin/dashboard (entre com a admin key).
+- Sem `REDIS_URL`, o envio roda em background no próprio processo. Com `EMAIL_PROVIDER=console` os emails só aparecem no log.
 
-Executar:
+## Subir com Docker (API + worker + Redis + Postgres)
 
 ```bash
-uvicorn src.main:app --reload
+cp .env.example .env   # preencha ADMIN_API_KEY e as credenciais dos canais que for usar
+docker compose up --build
 ```
+A API aplica `alembic upgrade head` ao iniciar; `AUTO_CREATE_TABLES=false` no compose.
 
-Documentação:
-
-```
-http://localhost:8000/docs
-```
-
----
-
-# 🐳 Docker
-
-Build:
+## Primeiros passos
 
 ```bash
-docker compose build
+# 1) Template (admin). Em email o conteúdo é HTML; nos demais canais, texto puro.
+curl -X POST localhost:8000/api/v1/admin/templates -H "X-Admin-Key: $ADMIN" -H "Content-Type: application/json" -d '{
+  "name":"resultado_disponivel","channel":"email",
+  "subject":"Resultado {{ numero }} disponível",
+  "html_content":"<p>Olá, {{ cliente }}! O resultado {{ numero }} está disponível.</p>",
+  "variables":["cliente","numero"]}'
+
+# 2) Sistema cliente (a api_key aparece só nesta resposta)
+curl -X POST localhost:8000/api/v1/admin/clients -H "X-Admin-Key: $ADMIN" -H "Content-Type: application/json" \
+  -d '{"name":"sistema_laudos","allowed_channels":["email","sms"],"rate_limit_per_minute":60}'
+
+# 3) Enviar
+curl -X POST localhost:8000/api/v1/notifications -H "X-API-Key: ns_..." -H "Content-Type: application/json" \
+  -H "X-On-Behalf-Of: maria.silva" -H "Idempotency-Key: laudo-12345-aviso" -d '{
+  "channel":"email","recipient":"cliente@email.com","template":"resultado_disponivel",
+  "priority":"normal","data":{"cliente":"João","numero":"12345"}}'
+# -> 202 {"id":"...","status":"PROCESSING"}
+
+# 4) Status
+curl localhost:8000/api/v1/notifications/<id> -H "X-API-Key: ns_..."
 ```
 
-Executar:
+`priority`: `low`, `normal`, `high` ou `auto` (classificada pela IA; sem IA, por palavras-chave).
+Todas as variáveis listadas em `variables` do template são obrigatórias em `data` (422 se faltarem).
+
+## Configuração dos canais
+
+**Microsoft Graph (email)** — Registre um app no Entra ID, crie um client secret e conceda a permissão de **aplicativo** `Mail.Send` com consentimento do administrador. Preencha `GRAPH_*`. Restrinja o app às caixas de envio com uma *Application Access Policy* do Exchange Online; sem isso ele poderia enviar como qualquer usuário do tenant.
+
+**Teams** — No canal, crie um fluxo do Power Automate/Workflows "Postar em um canal quando uma solicitação de webhook for recebida". Cadastre a URL em `TEAMS_WEBHOOKS='{"ti-alertas":"https://..."}'` e use `ti-alertas` como `recipient`. A URL é segredo: nunca aparece em logs ou erros.
+
+**WhatsApp** — Configure `WHATSAPP_TOKEN` e `WHATSAPP_PHONE_NUMBER_ID`. A Meta só entrega texto livre dentro da janela de 24h de conversa; para iniciar conversas use um template aprovado: no template do serviço informe `external_template_name` (e `language`); as `variables`, na ordem declarada, viram os parâmetros do corpo.
+
+**SMS** — Configure `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` e `TWILIO_FROM`.
+
+## Painel administrativo (`/admin/dashboard`)
+
+Visão geral (volume, taxa de sucesso, falhas por canal/sistema, principais erros, alerta de falhas), busca de notificações com trilha de auditoria e reenvio manual, gestão de templates, gestão de sistemas (canais permitidos, limite por minuto, revogar/reativar, rotacionar chave) e assistentes de IA.
+
+## Fila, retry e falhas
+
+- Com Redis, o worker (`python -m app.workers.email_worker`) consome as filas em ordem de prioridade. Falhas temporárias (rede, 408/429/5xx) são reenviadas com backoff exponencial até `MAX_ATTEMPTS`, mantendo a prioridade; erros permanentes viram `FAILED`. Rode quantos workers precisar.
+- **Alerta de falhas:** quando a taxa de falhas na janela atinge `FAILURE_ALERT_THRESHOLD` (com ao menos `FAILURE_ALERT_MIN_EVENTS` envios finalizados), o painel exibe um alerta (`GET /api/v1/admin/stats`).
+
+## IA (opcional — `ANTHROPIC_API_KEY`)
+
+Tudo é sugestão: nada é salvo ou enviado automaticamente. Revise antes de usar.
+- `POST /api/v1/admin/ai/generate-template` — gera um template a partir de uma descrição (as variáveis são extraídas do texto gerado, não confiadas ao modelo).
+- `POST /api/v1/admin/ai/classify-priority` e `priority: "auto"` no envio (nunca bloqueia: em falha cai na heurística).
+- `POST /api/v1/admin/ai/suggest-reply` — sugere respostas a mensagens de clientes.
+- `GET /api/v1/admin/ai/failure-analysis` — alerta por regra + diagnóstico em texto das falhas.
+
+Atenção à privacidade: ao usar IA, o texto dessas chamadas é transmitido à API da Anthropic. Geração de template, sugestão de resposta e análise de falhas são acionadas só pelo admin. Já `priority: "auto"` envia o assunto e o corpo renderizado de cada notificação — não use `auto` se o conteúdo for sensível.
+
+## Segurança e privacidade
+
+- API Keys por sistema, guardadas só como hash SHA-256; cada sistema só consulta as próprias notificações e usa só os canais permitidos. Rotas admin exigem `ADMIN_API_KEY` (desabilitadas se vazia).
+- Templates em sandbox Jinja2; no email, autoescape de HTML nas variáveis.
+- **Retenção:** com `DATA_RETENTION_DAYS=N`, notificações mais antigas que N dias têm `data` removido e destinatário mascarado (também na auditoria); status, datas e sistema de origem são mantidos. Roda no worker (ou na API, sem Redis); `POST /api/v1/admin/maintenance/purge` executa na hora.
+- Segredos vêm de variáveis de ambiente: em produção use um cofre (Azure Key Vault etc.) e sirva a API atrás de HTTPS.
+- O rate limit usa Redis quando disponível (compartilhado entre instâncias); sem Redis, é local a cada processo.
+
+## Migrações
 
 ```bash
-docker compose up -d
+alembic upgrade head                                      # aplicar
+alembic revision --autogenerate -m "descrição"            # após alterar modelos
 ```
+Em desenvolvimento, `AUTO_CREATE_TABLES=true` (padrão) cria as tabelas sozinho; em produção use Alembic.
 
----
+## Testes
 
-# 🤝 Integração
-
-Qualquer sistema capaz de consumir HTTP pode utilizar o serviço.
-
-Compatível com:
-
-* Java
-* C#
-* Node.js
-* Python
-* Sistemas legados
-
-Exemplo:
-
-```
-Sistema Corporativo
-
-        |
-
-HTTP API
-
-        |
-
-Notification Service
-
-        |
-
-Mensagem enviada
-```
-
----
-
-# 🌎 Visão Futura
-
-O Notification Service pode evoluir para uma plataforma completa de comunicação empresarial:
-
-Possibilidades:
-
-* Comunicação multicanal.
-* Automação inteligente.
-* Analytics.
-* IA para geração de conteúdo.
-* Fluxos automatizados.
-* Gestão centralizada.
-
----
-
-# 📌 Conclusão
-
-O Notification Service transforma comunicação distribuída em uma infraestrutura centralizada, segura e escalável.
-
-A plataforma reduz complexidade operacional, padroniza integrações e permite que novos sistemas utilizem recursos de comunicação sem depender de implementações individuais.
-
----
-
-# 👨‍💻 Autor
-
-Projeto de arquitetura e desenvolvimento de software corporativo.
-
+```bash
+pytest   # 60 testes: API, retry, todos os canais (HTTP simulado), filas, IA, retenção, migrações
 ```
